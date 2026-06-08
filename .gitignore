@@ -1,0 +1,34 @@
+# ===== 系统文件 =====
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ===== 编辑器 =====
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# ===== 临时文件 =====
+*.log
+*.tmp
+*.bak
+自尊心_temp_*/
+
+# ===== Node（如有） =====
+node_modules/
+package-lock.json
+pnpm-lock.yaml
+yarn.lock
+
+# ===== 构建产物（如有） =====
+dist/
+build/
+out/
+.next/
+.nuxt/
+
+# ===== WorkBuddy 本地数据 =====
+.workbuddy/memory/
+.workbuddy/skills/

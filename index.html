@@ -69,6 +69,11 @@ canvas{display:block;width:100%;height:100%;}
 @keyframes tutBounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-15px)}}
 #tut-skip{position:absolute;top:20px;right:20px;color:rgba(255,255,255,.5);font-size:14px;padding:8px 16px;border:1px solid rgba(255,255,255,.3);border-radius:20px;cursor:pointer;pointer-events:auto;}
 
+/* 音效开关 */
+#btn-sfx{position:fixed;top:10px;right:70px;z-index:40;width:36px;height:36px;border-radius:50%;background:rgba(0,0,0,.5);border:1px solid rgba(255,255,255,.25);color:#fff;font-size:18px;cursor:pointer;pointer-events:auto;display:flex;align-items:center;justify-content:center;transition:background .3s;}
+#btn-sfx:hover{background:rgba(0,200,255,.2);}
+#btn-sfx.muted{opacity:.5;}
+
 @media(max-width:480px){
   .menu-title{font-size:30px;letter-spacing:5px}
   .logo-icon{font-size:56px}
@@ -122,6 +127,9 @@ canvas{display:block;width:100%;height:100%;}
   <div class="tut-text">✨ 你的风筝会自动射击<br>👆 拖拽屏幕控制方向<br>💣 按 B 键释放炸弹<br>🌟 收集道具变强</div>
   <div class="tut-arrow">🪁</div>
 </div>
+
+<!-- 音效开关 -->
+<button id="btn-sfx" onclick="toggleSfx()" title="音效/BGM">🔊</button>
 
 <script>
 // ============================================================
@@ -234,6 +242,84 @@ function spawnParticles(x,y,count,color,spread=100,life=0.6,size=2){
 let scorePopups=[];
 function addScorePopup(x,y,text,color='#fff',size=16){
   scorePopups.push({x,y,text,color,size,life:0.8,opacity:1,vy:-60});
+}
+
+// ==================== 音效系统 (Web Audio API) ====================
+let audioCtx=null, bgmGain=null, bgmActive=false, sfxMuted=false;
+function initAudio(){
+  if(audioCtx) return;
+  try{audioCtx=new(window.AudioContext||window.webkitAudioContext)();}catch(e){return;}
+  bgmGain=audioCtx.createGain();bgmGain.gain.value=0;bgmGain.connect(audioCtx.destination);
+}
+function playTone(freq,dur,type='square',vol=.12,detune=0){
+  if(!audioCtx||sfxMuted) return;
+  const t=audioCtx.currentTime;
+  const osc=audioCtx.createOscillator();const g=audioCtx.createGain();
+  osc.type=type;osc.frequency.setValueAtTime(freq,t);if(detune)osc.detune.setValueAtTime(detune,t);
+  g.gain.setValueAtTime(vol,t);g.gain.exponentialRampToValueAtTime(.001,t+dur);
+  osc.connect(g);g.connect(audioCtx.destination);
+  osc.start(t);osc.stop(t+dur);
+}
+function playNoise(dur,vol=.08,lpFreq=800){
+  if(!audioCtx||sfxMuted) return;
+  const t=audioCtx.currentTime,bufferSize=audioCtx.sampleRate*dur;
+  const buf=audioCtx.createBuffer(1,bufferSize,audioCtx.sampleRate);
+  const data=buf.getChannelData(0);for(let i=0;i<bufferSize;i++) data[i]=Math.random()*2-1;
+  const src=audioCtx.createBufferSource();src.buffer=buf;
+  const lp=audioCtx.createBiquadFilter();lp.type='lowpass';lp.frequency.setValueAtTime(lpFreq,t);lp.frequency.exponentialRampToValueAtTime(200,t+dur);
+  const g=audioCtx.createGain();g.gain.setValueAtTime(vol,t);g.gain.exponentialRampToValueAtTime(.001,t+dur);
+  src.connect(lp);lp.connect(g);g.connect(audioCtx.destination);
+  src.start(t);src.stop(t+dur);
+}
+const SFX={
+  shoot(){playTone(800,.04,'square',.06);playTone(1200,.03,'square',.04,50);},
+  hit(freq=300){playTone(freq,.06,'sawtooth',.08);playNoise(.04,.03,1500);},
+  explode(){playNoise(.25,.12,400);playTone(80,.2,'sine',.15);},
+  pickup(){playTone(600,.06,'square',.06);setTimeout(()=>playTone(900,.08,'square',.07),40);},
+  bomb(){playNoise(.5,.15,200);playTone(50,.4,'sine',.2);},
+  bossWarning(){playTone(120,.3,'sawtooth',.1);setTimeout(()=>playTone(160,.3,'sawtooth',.1),200);},
+  die(){playNoise(.4,.1,300);playTone(60,.3,'sine',.15);playTone(40,.5,'sawtooth',.08);},
+  achievement(){playTone(523,.1,'square',.06);setTimeout(()=>playTone(659,.1,'square',.06),100);setTimeout(()=>playTone(784,.15,'square',.07),200);},
+  fever(){playTone(440,.08,'square',.05);setTimeout(()=>playTone(554,.08,'square',.05),60);setTimeout(()=>playTone(659,.08,'square',.05),120);setTimeout(()=>playTone(880,.12,'square',.06),180);},
+  combo(c){playTone(400+c*30,.08,'square',Math.min(.1,c*.01));},
+};
+
+// BGM - 简单循环低音 + 琶音（动态速度）
+let bgmNoteIdx=0, bgmTimeout=null;
+const BGM_NOTES=[65.41,73.42,82.41,98.00,110.00,98.00,82.41,73.42];
+function bgmTick(){
+  if(!bgmActive||!audioCtx) return;
+  if(gameRunning||deathSlowMo>0){
+    const t=audioCtx.currentTime;
+    const osc=audioCtx.createOscillator();
+    osc.type='triangle';osc.frequency.setValueAtTime(BGM_NOTES[bgmNoteIdx%8],t);
+    const g=audioCtx.createGain();g.gain.setValueAtTime(.015,t);g.gain.exponentialRampToValueAtTime(.001,t+.35);
+    osc.connect(g);g.connect(audioCtx.destination);
+    osc.start(t);osc.stop(t+.35);
+    if(bgmNoteIdx%2===0){playNoise(.08,.02,2000);}
+    bgmNoteIdx++;
+  }
+  const tempo=Math.max(150,400-heightM*.5);
+  bgmTimeout=setTimeout(bgmTick,tempo);
+}
+function startBGM(){
+  if(!audioCtx||bgmActive) return;
+  bgmActive=true;bgmNoteIdx=0;
+  bgmGain.gain.linearRampToValueAtTime(.04,audioCtx.currentTime+1);
+  bgmTimeout=setTimeout(bgmTick,400);
+}
+function stopBGM(){
+  bgmActive=false;
+  if(bgmTimeout){clearTimeout(bgmTimeout);bgmTimeout=null;}
+  if(bgmGain) bgmGain.gain.linearRampToValueAtTime(0,audioCtx.currentTime+.5);
+}
+
+function toggleSfx(){
+  sfxMuted=!sfxMuted;
+  const btn=document.getElementById('btn-sfx');
+  btn.textContent=sfxMuted?'🔇':'🔊';
+  btn.classList.toggle('muted',sfxMuted);
+  if(sfxMuted){stopBGM();}else if(gameRunning){startBGM();}
 }
 
 // ==================== 游戏状态 ====================
@@ -364,6 +450,7 @@ function shoot(p){
     playerBullets.push(createBullet(p.x-4,ty,-Math.PI/2-.06));
     playerBullets.push(createBullet(p.x+4,ty,-Math.PI/2+.06));
   }
+  SFX.shoot();
 }
 function drawPlayerBullet(b){
   ctx.save();ctx.translate(b.x,b.y);
@@ -509,6 +596,7 @@ function useBomb(){
   if(bombCount<=0) return;
   bombCount--; dailyMissions.missions.forEach(m=>{if(m.type==='bomb'&&!m.done)m.progress++;});
   spawnParticles(W/2,H/2,60,'#fff',300,.8,4);
+  SFX.bomb();
   spawnParticles(W/2,H/2,40,'#0ff',250,.6,3);
   screenShakeTrauma=0.5;
   enemies.forEach(e=>{spawnParticles(e.x,e.y,15,'#f84',100,.4,3);});
@@ -594,6 +682,7 @@ function unlockAchievement(aid){
   if(achievements.includes(aid)) return;
   achievements.push(aid);SAVE.set('achievements',achievements);
   achievementQueue.push(aid);
+  SFX.achievement();
 }
 
 function showAchievement(){
@@ -621,6 +710,7 @@ function gameOver(cause){
   spawnParticles(player.x,player.y,40,'#f84',150,.8,3);
   spawnParticles(player.x,player.y,20,SKINS[currentSkin].color,180,1.2,4);
   screenShakeTrauma=0.9;deathSlowMo=1.5;
+  SFX.die();stopBGM();
   // 剧终慢镜头粒子继续渲染1.5秒
   deathTimer=1.5;
 
@@ -731,8 +821,8 @@ function update(now){
   if(player.alive){
     player.x+=(player.targetX-player.x)*.1;
     player.y+=(player.targetY-player.y)*.06;
-    player.x=Math.max(30,Math.min(W-30,player.x));
-    player.y=Math.max(H*.25,Math.min(H*.85,player.y));
+    player.x=Math.max(5,Math.min(W-5,player.x));
+    player.y=Math.max(H*.05,Math.min(H*.95,player.y));
     // 挤压拉伸
     const spd=Math.abs(player.vx)/800;
     player.squashX=1+spd*.2;player.squashY=1-spd*.15;
@@ -801,6 +891,7 @@ function update(now){
       if(dist<28){
         applyItem(it);
         items.splice(i,1);
+        SFX.pickup();
       }
     }
   }
@@ -814,9 +905,11 @@ function update(now){
         e.hp--;e.flashTimer=.06;
         playerBullets.splice(bi,1);
         spawnParticles(b.x,b.y,4,'#0ff',40,.2,1.5);
+        SFX.hit(e.type==='boss'?150:(e.type==='large'?250:500));
 
         if(e.hp<=0){
           spawnParticles(e.x,e.y,25,e.color,120,.5,3);
+          SFX.explode();
           screenShakeTrauma=Math.min(1,Math.max(screenShakeTrauma,e.type==='boss'?.7:(e.type==='large'?.25:.08)));
           hitStop=e.type==='boss'?.15:(e.type==='large'?.04:0);
           addScorePopup(e.x,e.y-10,'+'+e.score,e.color,e.type==='boss'?22:(e.type==='large'?18:14));
@@ -825,10 +918,11 @@ function update(now){
           const addScore=e.score*mult;
           score+=addScore;kills++;combo++;
           if(combo>maxCombo) maxCombo=combo;
+          if(combo%5===0) SFX.combo(combo);
           dailyMissions.missions.forEach(m=>{if(m.type==='kills'&&!m.done)m.progress++;});
 
           feverGauge=Math.min(100,feverGauge+(e.type==='boss'?30:(e.type==='large'?15:5)));
-          if(feverGauge>=100&&!feverActive){feverActive=true;feverTimer=3;spawnParticles(player.x,player.y,30,'#ff0',150,.6,3);}
+          if(feverGauge>=100&&!feverActive){feverActive=true;feverTimer=3;spawnParticles(player.x,player.y,30,'#ff0',150,.6,3);SFX.fever();}
 
           if(e.type==='boss'){bossKills++;dailyMissions.missions.forEach(m=>{if(m.type==='boss'&&!m.done)m.progress++;});bossFight=null;
             items.push(createItem(e.x,e.y,'weapon'));items.push(createItem(e.x-20,e.y,'bomb'));items.push(createItem(e.x+20,e.y,'star'));items.push(createItem(e.x,e.y-20,'shield'));items.push(createItem(e.x-10,e.y-10,'coin'));items.push(createItem(e.x+10,e.y-10,'coin'));
@@ -905,6 +999,7 @@ function update(now){
   if(heightM>=nextBossAt&&!bossFight&&enemies.length===0){
     const boss=createEnemy('boss');boss.x=W/2;boss.y=-60;
     enemies.push(boss);bossFight=boss;
+    SFX.bossWarning();
     nextBossAt+=500+Math.random()*100;waveTimer=2;
   }
 
@@ -1102,30 +1197,13 @@ function draw(offset){
 }
 
 // ==================== 循环 ====================
-let gameLoopError = null;
-let debugFPS = 0, debugFrameTimes = [];
 function gameLoop(now){
   try {
     if(!lastTime) lastTime=now;
     if(gameRunning||deathSlowMo>0) update(now);
     draw(heightM);
-    // 调试信息
-    debugFrameTimes.push(now);
-    if(debugFrameTimes.length>60) debugFrameTimes.shift();
-    if(debugFrameTimes.length>1) debugFPS = 1000/((debugFrameTimes[debugFrameTimes.length-1]-debugFrameTimes[0])/debugFrameTimes.length);
-    ctx.fillStyle='rgba(255,255,255,0.6)';ctx.font='10px monospace';
-    ctx.fillText('FPS:'+Math.round(debugFPS)+' running:'+gameRunning+' dt:'+(dt||0).toFixed(4), W-180, 16);
-    ctx.fillText('lastTime:'+(lastTime||0).toFixed(0)+' now:'+now.toFixed(0), W-180, 32);
   } catch(e) {
-    if(!gameLoopError) { gameLoopError = e.message; console.error(e); }
-    ctx.fillStyle='rgba(255,0,0,0.85)';
-    ctx.font='14px monospace';
-    ctx.fillText('JS ERROR: '+gameLoopError, 10, H/2-20);
-    ctx.fillStyle='rgba(0,0,0,0.7)';
-    ctx.fillRect(0, H/2, W, 80);
-    ctx.fillStyle='#f00';ctx.font='11px monospace';
-    const lines = (e.stack||'').split('\n').slice(0,3);
-    lines.forEach((l,i)=>ctx.fillText(l.trim(), 10, H/2+20+i*16));
+    console.error('Game loop error:', e);
   }
   requestAnimationFrame(gameLoop);
 }
@@ -1188,6 +1266,7 @@ window.addEventListener('keyup',e=>{if(e.key===' ')shooting=false;});
 
 // ==================== 游戏控制 ====================
 function startGame(){
+  initAudio();startBGM();
   player=createPlayer();
   enemies=[];playerBullets=[];enemyBullets=[];items=[];particles=[];
   scorePopups=[];

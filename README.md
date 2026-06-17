@@ -4,6 +4,7 @@
 
 [![Play Now](https://img.shields.io/badge/🎮-Play_Now-brightgreen)](https://emincemnt.github.io/kite-legend/)
 [![GitHub](https://img.shields.io/badge/GitHub-Open_Source-blue)](https://github.com/EminCemNT/kite-legend)
+[![Support](https://img.shields.io/badge/☕-Buy_Me_Coffee-orange)](https://kodecoffee.com/i/kitelegend)
 [![License](https://img.shields.io/badge/License-MIT-yellow)](LICENSE)
 
 ---
@@ -106,7 +107,7 @@ MIT © 2024 EminCemNT
 如果觉得有趣，可以：
 - 给个 Star ⭐
 - Fork 并二次创作
-- [在 itch.io 支持](https://itch.io/)（即将上架）
+- [☕ 请我喝杯奶茶](https://kodecoffee.com/i/kitelegend)（KodeCoffee）
 
 ---
 

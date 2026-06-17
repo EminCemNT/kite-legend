@@ -995,7 +995,7 @@ function draw(offset){
   });
 
   // 炸弹动画
-  if(player.bombAnim>0) ctx.fillStyle=`rgba(255,255,255,${player.bombAnim*.6})`;ctx.fillRect(0,0,W,H);
+  if(player.bombAnim>0){ctx.fillStyle=`rgba(255,255,255,${player.bombAnim*.6})`;ctx.fillRect(0,0,W,H);}
 
   ctx.restore();
 
@@ -1216,6 +1216,9 @@ function parseColor(c){
 }
 
 // ==================== 初始化 ====================
+// 初始化空数组/对象，避免 draw(0) 时崩溃
+player = createPlayer(); player.alive = false;
+enemies = []; playerBullets = []; enemyBullets = []; items = []; particles = [];
 initBg();
 refreshMenu();
 renderSkinSelector();

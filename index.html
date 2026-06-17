@@ -380,6 +380,7 @@ function drawPlayerBullet(b){
 // ==================== 敌机 ====================
 function createEnemy(type='small'){
   const x=Math.random()*(W-60)+30;
+  const y=-80;
   const types={
     small:{w:22,h:24,hp:1,score:100,color:'#f44',speed:150,name:'侦查机',shootT:3},
     medium:{w:36,h:38,hp:3,score:300,color:'#f84',speed:110,name:'攻击机',shootT:1.8},
@@ -709,6 +710,7 @@ function update(now){
     return;
   }
   dt=Math.min((now-lastTime)/1000,.05);
+  if(dt<=0) dt=0.016;
   lastTime=now;frameCount++;gameTime+=dt;
 
   if(hitStop>0){hitStop-=dt;dt*=.1;}
@@ -1100,10 +1102,31 @@ function draw(offset){
 }
 
 // ==================== 循环 ====================
+let gameLoopError = null;
+let debugFPS = 0, debugFrameTimes = [];
 function gameLoop(now){
-  if(!lastTime) lastTime=now;
-  if(gameRunning||deathSlowMo>0) update(now);
-  draw(heightM);
+  try {
+    if(!lastTime) lastTime=now;
+    if(gameRunning||deathSlowMo>0) update(now);
+    draw(heightM);
+    // 调试信息
+    debugFrameTimes.push(now);
+    if(debugFrameTimes.length>60) debugFrameTimes.shift();
+    if(debugFrameTimes.length>1) debugFPS = 1000/((debugFrameTimes[debugFrameTimes.length-1]-debugFrameTimes[0])/debugFrameTimes.length);
+    ctx.fillStyle='rgba(255,255,255,0.6)';ctx.font='10px monospace';
+    ctx.fillText('FPS:'+Math.round(debugFPS)+' running:'+gameRunning+' dt:'+(dt||0).toFixed(4), W-180, 16);
+    ctx.fillText('lastTime:'+(lastTime||0).toFixed(0)+' now:'+now.toFixed(0), W-180, 32);
+  } catch(e) {
+    if(!gameLoopError) { gameLoopError = e.message; console.error(e); }
+    ctx.fillStyle='rgba(255,0,0,0.85)';
+    ctx.font='14px monospace';
+    ctx.fillText('JS ERROR: '+gameLoopError, 10, H/2-20);
+    ctx.fillStyle='rgba(0,0,0,0.7)';
+    ctx.fillRect(0, H/2, W, 80);
+    ctx.fillStyle='#f00';ctx.font='11px monospace';
+    const lines = (e.stack||'').split('\n').slice(0,3);
+    lines.forEach((l,i)=>ctx.fillText(l.trim(), 10, H/2+20+i*16));
+  }
   requestAnimationFrame(gameLoop);
 }
 

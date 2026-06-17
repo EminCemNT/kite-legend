@@ -16,8 +16,12 @@ canvas{display:block;width:100%;height:100%;}
 .menu-glow{position:absolute;width:400px;height:400px;background:radial-gradient(circle,rgba(0,200,255,.15),transparent 70%);top:50%;left:50%;transform:translate(-50%,-50%);animation:pulse 3s ease-in-out infinite;}
 @keyframes pulse{0%,100%{transform:translate(-50%,-50%) scale(1);opacity:.6}50%{transform:translate(-50%,-50%) scale(1.3);opacity:1}}
 #menu-inner{position:relative;z-index:2;text-align:center;padding:20px;}
-.logo-icon{font-size:72px;margin-bottom:8px;filter:drop-shadow(0 0 30px #0ff) drop-shadow(0 0 60px #08f);animation:logoFloat 2s ease-in-out infinite;}
+.logo-icon{width:90px;height:90px;margin:0 auto 12px;position:relative;animation:logoFloat 2s ease-in-out infinite;}
+.logo-kite{position:absolute;inset:0;}
+.logo-kite svg{width:100%;height:100%;filter:drop-shadow(0 0 20px #0ff) drop-shadow(0 0 40px #06f);}
+.logo-pulse{position:absolute;inset:-20px;border-radius:50%;background:radial-gradient(circle,rgba(0,200,255,.2),transparent 70%);animation:logoPulse 2s ease-in-out infinite;}
 @keyframes logoFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+@keyframes logoPulse{0%,100%{transform:scale(1);opacity:.5}50%{transform:scale(1.2);opacity:1}}
 .menu-title{font-size:40px;font-weight:900;color:#fff;letter-spacing:8px;background:linear-gradient(180deg,#fff 0%,#0cf 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;text-shadow:none;margin-bottom:4px;}
 .menu-title-en{font-size:13px;color:rgba(0,200,255,.7);letter-spacing:6px;margin-bottom:8px;}
 .menu-sub{font-size:13px;color:rgba(255,255,255,.5);letter-spacing:2px;margin-bottom:30px;line-height:1.8;}
@@ -30,6 +34,13 @@ canvas{display:block;width:100%;height:100%;}
 .skin-btn.active{border-color:#0cf;box-shadow:0 0 12px rgba(0,200,255,.4);background:rgba(0,200,255,.1);}
 .skin-btn.locked{opacity:.3;filter:grayscale(1);cursor:not-allowed;}
 .skin-lock{font-size:10px;display:block;line-height:1;}
+
+/* 难度选择器 */
+#difficulty-selector{display:flex;gap:6px;justify-content:center;margin:8px 0;flex-wrap:wrap;}
+.diff-btn{padding:6px 14px;border-radius:20px;border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.05);color:rgba(255,255,255,.5);font-size:12px;font-weight:600;cursor:pointer;pointer-events:auto;transition:all .2s;letter-spacing:1px;}
+.diff-btn:hover{border-color:rgba(255,255,255,.4);color:#fff;}
+.diff-btn.active{border-color:var(--dc);box-shadow:0 0 12px var(--ds);background:var(--db);color:var(--dc);}
+.diff-label{font-size:11px;color:rgba(255,255,255,.4);text-align:center;margin-top:2px;letter-spacing:1px;}
 
 /* 结算面板 */
 #gameover{position:fixed;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;z-index:30;background:rgba(0,0,0,.85);backdrop-filter:blur(10px);}
@@ -74,11 +85,22 @@ canvas{display:block;width:100%;height:100%;}
 #btn-sfx:hover{background:rgba(0,200,255,.2);}
 #btn-sfx.muted{opacity:.5;}
 
+/* 剧情对话框 */
+#story-box{position:fixed;top:-120px;left:50%;transform:translateX(-50%);z-index:45;background:rgba(5,5,30,.95);border:1px solid rgba(0,200,255,.4);border-radius:12px;padding:12px 20px;min-width:260px;max-width:340px;pointer-events:none;transition:top .5s cubic-bezier(.22,1,.36,1);box-shadow:0 0 30px rgba(0,150,255,.2);}
+#story-box.show{top:50px;}
+#story-box .story-speaker{font-size:11px;color:#0cf;font-weight:700;letter-spacing:2px;margin-bottom:4px;}
+#story-box .story-text{font-size:13px;color:rgba(255,255,255,.85);line-height:1.6;min-height:20px;}
+#story-box .story-text .char{opacity:0;animation:charIn .05s forwards;}
+@keyframes charIn{to{opacity:1;}}
+#story-box .story-arrow{position:absolute;bottom:-8px;left:50%;transform:translateX(-50%);width:0;height:0;border-left:8px solid transparent;border-right:8px solid transparent;border-top:8px solid rgba(0,200,255,.4);}
+
 @media(max-width:480px){
   .menu-title{font-size:30px;letter-spacing:5px}
-  .logo-icon{font-size:56px}
+  .logo-icon{width:70px;height:70px}
   .go-panel{padding:24px;margin:0 20px;}
   #achievement-popup.show{top:10px;}
+  #story-box{min-width:220px;max-width:300px;padding:10px 16px;}
+  #story-box .story-text{font-size:12px;}
 }
 </style>
 </head>
@@ -90,11 +112,58 @@ canvas{display:block;width:100%;height:100%;}
   <div id="menu-bg"></div>
   <div class="menu-glow"></div>
   <div id="menu-inner">
-    <div class="logo-icon">⚡🪁</div>
+    <div class="logo-icon">
+      <div class="logo-pulse"></div>
+      <div class="logo-kite">
+        <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+          <!-- 星际风筝主体 -->
+          <defs>
+            <linearGradient id="kiteGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" style="stop-color:#0ff;stop-opacity:1"/>
+              <stop offset="50%" style="stop-color:#06f;stop-opacity:1"/>
+              <stop offset="100%" style="stop-color:#80f;stop-opacity:1"/>
+            </linearGradient>
+            <filter id="glow">
+              <feGaussianBlur stdDeviation="2" result="blur"/>
+              <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+            </filter>
+          </defs>
+          <!-- 风筝菱形主体 -->
+          <polygon points="50,10 80,50 50,85 20,50" fill="url(#kiteGrad)" opacity="0.8" filter="url(#glow)"/>
+          <!-- 中心能量核 -->
+          <circle cx="50" cy="50" r="8" fill="#fff" opacity="0.9">
+            <animate attributeName="r" values="8;12;8" dur="2s" repeatCount="indefinite"/>
+            <animate attributeName="opacity" values="0.9;0.5;0.9" dur="2s" repeatCount="indefinite"/>
+          </circle>
+          <!-- 十字能量线 -->
+          <line x1="50" y1="10" x2="50" y2="85" stroke="#0ff" stroke-width="1.5" opacity="0.6"/>
+          <line x1="20" y1="50" x2="80" y2="50" stroke="#0ff" stroke-width="1.5" opacity="0.6"/>
+          <!-- 四角光点 -->
+          <circle cx="50" cy="10" r="3" fill="#0ff" opacity="0.8">
+            <animate attributeName="opacity" values="0.8;0.2;0.8" dur="1.5s" repeatCount="indefinite"/>
+          </circle>
+          <circle cx="80" cy="50" r="3" fill="#06f" opacity="0.8">
+            <animate attributeName="opacity" values="0.2;0.8;0.2" dur="1.5s" repeatCount="indefinite"/>
+          </circle>
+          <circle cx="50" cy="85" r="3" fill="#80f" opacity="0.8">
+            <animate attributeName="opacity" values="0.8;0.2;0.8" dur="1.5s" repeatCount="indefinite"/>
+          </circle>
+          <circle cx="20" cy="50" r="3" fill="#f0f" opacity="0.8">
+            <animate attributeName="opacity" values="0.2;0.8;0.2" dur="1.5s" repeatCount="indefinite"/>
+          </circle>
+          <!-- 外圈轨道 -->
+          <ellipse cx="50" cy="50" rx="42" ry="42" fill="none" stroke="#0ff" stroke-width="0.5" opacity="0.3" stroke-dasharray="4 4">
+            <animateTransform attributeName="transform" type="rotate" from="0 50 50" to="360 50 50" dur="8s" repeatCount="indefinite"/>
+          </ellipse>
+        </svg>
+      </div>
+    </div>
     <div class="menu-title">星际风筝传说</div>
     <div class="menu-title-en">STAR KITE LEGEND</div>
     <div class="menu-sub">操控风筝穿越星际<br>点击射击 · 滑动移动 · 收集道具</div>
     <div id="skin-selector"></div>
+    <div class="diff-label">⚙️ 难度选择</div>
+    <div id="difficulty-selector"></div>
     <button id="btn-start" onclick="startGame()">▶ 开始飞行</button>
     <div class="menu-stats" id="menu-stats"></div>
     <div class="menu-hint">触屏：拖拽移动 / 点击射击<br>键盘：← → 移动 / 空格射击 / B 炸弹</div>
@@ -121,11 +190,18 @@ canvas{display:block;width:100%;height:100%;}
 <!-- 成就弹窗 -->
 <div id="achievement-popup"><div class="ach-icon"></div><div class="ach-title"></div><div class="ach-desc"></div></div>
 
+<!-- 剧情对话框 -->
+<div id="story-box">
+  <div class="story-speaker"></div>
+  <div class="story-text"></div>
+  <div class="story-arrow"></div>
+</div>
+
 <!-- 教程 -->
 <div id="tutorial" onclick="closeTutorial()">
   <div id="tut-skip" onclick="event.stopPropagation();closeTutorial();">跳过</div>
-  <div class="tut-text">✨ 你的风筝会自动射击<br>👆 拖拽屏幕控制方向<br>💣 按 B 键释放炸弹<br>🌟 收集道具变强</div>
-  <div class="tut-arrow">🪁</div>
+  <div class="tut-text">🚀 星际风筝自动射击<br>👆 拖拽屏幕控制方向<br>💣 按 B 键释放炸弹<br>🌟 收集道具变强</div>
+  <div class="tut-arrow">🌌</div>
 </div>
 
 <!-- 音效开关 -->
@@ -154,8 +230,38 @@ let recordHeight = SAVE.get('record',0);
 let totalKills = SAVE.get('kills',0);
 let gamesPlayed = SAVE.get('games',0);
 let currentSkin = SAVE.get('skin',0);
+let currentDifficulty = SAVE.get('difficulty','normal');
 let achievements = SAVE.get('achievements',[]);
 let hasPlayedTutorial = SAVE.get('tutorial',false);
+
+// 难度配置
+const DIFFICULTIES = {
+  easy: {
+    name:'简单', desc:'休闲飞行', color:'#0f0',
+    spawnMin:.6, spawnMax:1.4, speedMult:.75, bossHP:30, bossInterval:650,
+    bulletSpeedMult:.7, startBombs:5, enemyProbs:[.6,.25,.15],
+    spawnCount:1, shootRateMult:1.5, hp:5
+  },
+  normal: {
+    name:'普通', desc:'星际巡航', color:'#0cf',
+    spawnMin:.18, spawnMax:.55, speedMult:1.0, bossHP:55, bossInterval:500,
+    bulletSpeedMult:1.0, startBombs:3, enemyProbs:[.35,.35,.3],
+    spawnCount:1, shootRateMult:1.0, hp:3
+  },
+  hard: {
+    name:'困难', desc:'枪林弹雨', color:'#f80',
+    spawnMin:.08, spawnMax:.35, speedMult:1.3, bossHP:85, bossInterval:400,
+    bulletSpeedMult:1.5, startBombs:2, enemyProbs:[.15,.35,.5],
+    spawnCount:2, shootRateMult:.65, hp:2
+  },
+  hell: {
+    name:'地狱', desc:'弹幕炼狱', color:'#f44',
+    spawnMin:.03, spawnMax:.2, speedMult:1.6, bossHP:130, bossInterval:300,
+    bulletSpeedMult:2.0, startBombs:1, enemyProbs:[.05,.3,.65],
+    spawnCount:3, shootRateMult:.35, hp:1
+  }
+};
+let diffCfg = DIFFICULTIES[currentDifficulty];
 
 // 皮肤系统
 const SKINS = [
@@ -240,6 +346,111 @@ function spawnParticles(x,y,count,color,spread=100,life=0.6,size=2){
 
 // ==================== 得分飘字 ====================
 let scorePopups=[];
+let bossKillAnnounce={active:false,timer:0,text:''};
+let bossIntroAnnounce={active:false,timer:0,text:'',bossName:''};
+
+// ==================== 剧情系统 ====================
+const STORY_DATA={
+  start:[
+    {speaker:'任务指挥中心',text:'风筝飞行员，欢迎回来！',delay:0},
+    {speaker:'任务指挥中心',text:'今天是2950年，星际垃圾回收部门需要你',delay:2.5},
+    {speaker:'任务指挥中心',text:'驾驶风筝飞行器，穿越这片失控的空间站残骸',delay:5},
+    {speaker:'风筝飞行员',text:'为什么又是我？我在摸鱼啊……',delay:8},
+    {speaker:'任务指挥中心',text:'因为只有你会用风筝在太空飞。出发！',delay:11}
+  ],
+  height100:{speaker:'任务指挥中心',text:'已进入轨道100米，注意躲避太空垃圾！'},
+  height500:{speaker:'任务指挥中心',text:'500米了！检测到敌方侦察单位，保持警惕！'},
+  height1000:{speaker:'风筝飞行员',text:'这些敌人好眼熟……好像我996那年的项目经理？'},
+  height1500:{speaker:'任务指挥中心',text:'进入平流层，大气干扰增强，弹幕密度上升'},
+  height2000:{speaker:'任务指挥中心',text:'2000米！解锁暗物质模式，敌人开始认真了'},
+  height3000:{speaker:'风筝飞行员',text:'我怀疑这片空间是甲方用需求文档堆出来的……'},
+  height4000:{speaker:'任务指挥中心',text:'4000米！Boss即将出现，检查你的武器系统！'},
+  height5000:{speaker:'任务指挥中心',text:'5000米……这里不该有人来的。Boss进入了狂暴模式。'},
+  bossPre:[
+    {speaker:'任务指挥中心',text:'警告！Boss单位接近！',delay:0},
+    {speaker:'Boss',text:'又一个不知死活的风筝飞行员……',delay:2.5},
+    {speaker:'Boss',text:'这片星空，将由我来回收！',delay:5}
+  ],
+  bossKill:[
+    {speaker:'任务指挥中心',text:'Boss已被击毁！干得漂亮！',delay:0},
+    {speaker:'风筝飞行员',text:'终于……它掉的东西能卖钱吗？',delay:2.5},
+    {speaker:'任务指挥中心',text:'能！你刚才打出了价值2000金币的碎片！',delay:5}
+  ],
+  gameOver:[
+    {speaker:'任务指挥中心',text:'风筝信号丢失……',delay:0},
+    {speaker:'任务指挥中心',text:'……又一位勇敢的飞行员陨落了',delay:2},
+    {speaker:'风筝飞行员',text:'下次……我要转行做PM……',delay:4.5}
+  ],
+  gameOverGood:[
+    {speaker:'任务指挥中心',text:'任务完成！风筝安全返航！',delay:0},
+    {speaker:'任务指挥中心',text:'你的表现将记入星际风筝传说史册！',delay:2.5},
+    {speaker:'风筝飞行员',text:'那我能报销摸鱼时间吗？',delay:5}
+  ]
+};
+let storyQueue=[];       // 当前待播放的剧情队列
+let storyTimer=0;        // 剧情计时器
+let storyActive=false;   // 是否有剧情正在播放
+let storyTyping=false;   // 是否正在打字
+let storyCharIndex=0;    // 当前打字位置
+let storyFullText='';    // 完整文本
+let storyTriggered=new Set(); // 已触发的剧情
+
+function showStory(speaker,text,duration=3){
+  const box=document.getElementById('story-box');
+  const spEl=box.querySelector('.story-speaker');
+  const txEl=box.querySelector('.story-text');
+  spEl.textContent=speaker;
+  // 根据说话人设置颜色
+  if(speaker==='任务指挥中心') spEl.style.color='#0cf';
+  else if(speaker==='Boss') spEl.style.color='#f44';
+  else spEl.style.color='#ff0';
+  // 打字机效果
+  txEl.textContent='';
+  storyFullText=text;
+  storyCharIndex=0;
+  storyTyping=true;
+  box.classList.add('show');
+  // 逐字显示
+  function typeChar(){
+    if(storyCharIndex<storyFullText.length){
+      txEl.textContent=storyFullText.slice(0,storyCharIndex+1);
+      storyCharIndex++;
+      setTimeout(typeChar,40);
+    } else {
+      storyTyping=false;
+      // 自动关闭
+      setTimeout(()=>{box.classList.remove('show');},(duration-.5)*1000);
+    }
+  }
+  typeChar();
+}
+
+function queueStory(storyArray,callback){
+  // storyArray: [{speaker,text,delay}]
+  let cumDelay=0;
+  storyArray.forEach((item,i)=>{
+    cumDelay+=item.delay||0;
+    setTimeout(()=>{
+      showStory(item.speaker,item.text,3);
+      if(i===storyArray.length-1&&callback) setTimeout(callback,3500);
+    },cumDelay*1000);
+  });
+}
+
+function checkStoryTrigger(heightM){
+  // 高度剧情触发
+  const milestones=[100,500,1000,1500,2000,3000,4000,5000];
+  for(const m of milestones){
+    if(heightM>=m&&!storyTriggered.has('height'+m)){
+      storyTriggered.add('height'+m);
+      const key='height'+m;
+      if(STORY_DATA[key]){
+        showStory(STORY_DATA[key].speaker,STORY_DATA[key].text,3.5);
+        return;
+      }
+    }
+  }
+}
 function addScorePopup(x,y,text,color='#fff',size=16){
   scorePopups.push({x,y,text,color,size,life:0.8,opacity:1,vy:-60});
 }
@@ -348,7 +559,8 @@ function createPlayer(){
     shootTimer:0,shootRate:0.18,
     invincible:0,shieldTimer:0,score2xTimer:0,magnetTimer:0,magnetRange:150,
     alive:true,bombAnim:0,
-    squashX:1,squashY:1,flashTimer:0
+    squashX:1,squashY:1,flashTimer:0,
+    hp:diffCfg.hp,maxHp:diffCfg.hp,damageFlash:0
   };
 }
 
@@ -360,8 +572,15 @@ function drawPlayer(p){
   const sy=p.squashY+(1-p.squashY)*0.15;
   ctx.scale(sx,sy);
   // 无敌闪烁/受击闪白
-  if(p.invincible>0&&Math.floor(p.invincible*20)%2===0) ctx.globalAlpha=0.5;
-  if(p.flashTimer>0){ctx.globalAlpha=1;p.flashTimer-=dt;}
+  if(p.invincible>0&&Math.floor(p.invincible*20)%2===0) ctx.globalAlpha=0.4;
+  if(p.damageFlash>0){
+    ctx.globalAlpha=1;
+    ctx.fillStyle='rgba(255,0,0,0.3)';
+    ctx.beginPath();ctx.arc(0,0,28,0,Math.PI*2);ctx.fill();
+    // 受击红框
+    ctx.strokeStyle='rgba(255,0,0,0.6)';
+    ctx.lineWidth=2;ctx.strokeRect(-20,-24,40,48);
+  }
 
   // 护盾光环
   if(p.shieldTimer>0){
@@ -465,23 +684,63 @@ function drawPlayerBullet(b){
 }
 
 // ==================== 敌机 ====================
+const BOSS_TITLES=['虚空霸主','深渊监视者','星辰毁灭者','维度漫游者','永恒审判者','混沌领主','末日执行者','星际暴君','暗物质之王','超弦撕裂者'];
+const ENEMY_NAMES={
+  small:[
+    '摸鱼探测器','996巡逻员','外卖配送员','甲方的眼线','幽灵探针',
+    'Bug生成器','截屏小助手','弹幕快递员','太空社畜','薅羊毛无人机',
+    '摸鱼协会会长','周报自动生成器','电梯广告播报员'
+  ],
+  medium:[
+    'KPI考核员','需求变更通知','猎杀者MK-II','碎星炮手','Deadline追击者',
+    '年终奖回收员','会议室预定机器人','PPT自动播放器','代码Review员',
+    '考勤打卡机','需求文档.exe','BUG修复拒绝者'
+  ],
+  large:[
+    '年终总结PPT','需求文档3.0','重装堡垒','钢铁巨鲸','泰坦级残骸',
+    '甲方终极形态','996永恒装置','需求黑洞','无限改稿机器',
+    '项目延期生成器','预算削减通知','裁员名单打印机'
+  ],
+  boss:[
+    '湮灭核心·EX','虚空之眼','996终极Boss','甲方之王','需求之神',
+    'Deadline Lord','年终奖清零者','无限需求体','PUA大师·改',
+    '996永恒帝','需求变更之主','KPI终结者'
+  ]
+};
 function createEnemy(type='small'){
   const x=Math.random()*(W-60)+30;
   const y=-80;
   const types={
-    small:{w:22,h:24,hp:1,score:100,color:'#f44',speed:150,name:'侦查机',shootT:3},
-    medium:{w:36,h:38,hp:3,score:300,color:'#f84',speed:110,name:'攻击机',shootT:1.8},
-    large:{w:52,h:56,hp:8,score:500,color:'#f22',speed:70,name:'重装机',shootT:1.2},
-    boss:{w:80,h:90,hp:50,score:2000,color:'#f00',speed:40,name:'BOSS',shootT:0.4}
+    small:{w:22,h:24,hp:1,score:100,color:'#f44',speed:150,shootT:3},
+    medium:{w:36,h:38,hp:3,score:300,color:'#f84',speed:110,shootT:1.8},
+    large:{w:52,h:56,hp:8,score:500,color:'#f22',speed:70,shootT:1.2},
+    boss:{w:80,h:90,hp:50,score:2000,color:'#f00',speed:40,shootT:0.4}
   };
   const t=types[type];
-  return {
+  const namePool=ENEMY_NAMES[type];
+  const randName=namePool[Math.floor(Math.random()*namePool.length)];
+  const obj={
     x,y,w:t.w,h:t.h,type,hp:t.hp,maxHp:t.hp,
-    score:t.score,color:t.color,speed:t.speed,name:t.name,
+    score:t.score,color:t.color,speed:t.speed,name:randName,
     vx:(Math.random()-.5)*60,vy:t.speed,
     shootTimer:t.shootT,shootCooldown:t.shootT+Math.random(),
     pattern:0,flashTimer:0,telegraphTimer:0,telegraphAngle:0
   };
+  if(type==='boss') obj.title=BOSS_TITLES[Math.floor(Math.random()*BOSS_TITLES.length)];
+  return obj;
+}
+
+function drawHeartPath(x,y,s){
+  const cx=x+s/2,cy=y+s/4;
+  ctx.beginPath();
+  ctx.moveTo(cx,y+s*.9);
+  ctx.bezierCurveTo(x-s*.3,y+s*.45,x-s*.2,y,x,y);
+  ctx.bezierCurveTo(x+s*.2,y,x+s*.3,y+s*.45,cx,y+s*.9);
+}
+
+function drawHeart(x,y,s,color){
+  ctx.fillStyle=color;
+  drawHeartPath(x,y,s);ctx.fill();
 }
 
 function drawEnemy(e){
@@ -515,7 +774,12 @@ function drawEnemy(e){
     // 小血条
     ctx.fillStyle='rgba(0,0,0,0.7)';ctx.fillRect(-30,-52,60,4);
     ctx.fillStyle=hpRatio>.5?'#f44':'#f00';ctx.fillRect(-30,-52,60*hpRatio,4);
-    ctx.fillStyle='#fff';ctx.font='10px sans-serif';ctx.textAlign='center';ctx.fillText(e.name,30,-50);
+    // 名字 + 称号
+    ctx.fillStyle='#fff';ctx.font='bold 11px sans-serif';ctx.textAlign='center';
+    ctx.shadowColor='#f00';ctx.shadowBlur=8;ctx.fillText(e.name,0,-56);
+    ctx.shadowBlur=0;
+    ctx.fillStyle='#ff0';ctx.font='9px sans-serif';ctx.fillText(`【${e.title}】`,0,-44);
+  } else if(e.type==='large'){
   } else if(e.type==='large'){
     ctx.fillStyle='#3a0a0a';ctx.strokeStyle='#f55';ctx.lineWidth=2;
     ctx.beginPath();
@@ -532,34 +796,54 @@ function drawEnemy(e){
     ctx.fillStyle='#f44';ctx.shadowColor='#f44';ctx.shadowBlur=6;
     ctx.beginPath();ctx.moveTo(0,-10);ctx.lineTo(9,0);ctx.lineTo(0,10);ctx.lineTo(-9,0);ctx.closePath();ctx.fill();ctx.shadowBlur=0;
   }
+  
+  // === 名称标签 ===
+  const nameY=e.type==='boss'?-e.h/2-20:(e.type==='large'?-e.h/2-14:(e.type==='medium'?-e.h/2-12:-e.h/2-8));
+  const nameSize=e.type==='boss'?13:(e.type==='large'?9:8);
+  const nameAlpha=e.type==='boss'?1:.5;
+  ctx.fillStyle=`rgba(255,255,255,${nameAlpha})`;ctx.font=`bold ${nameSize}px sans-serif`;
+  ctx.textAlign='center';
+  if(e.type==='boss'){
+    ctx.shadowColor='rgba(255,0,0,0.8)';ctx.shadowBlur=10;
+    ctx.fillText('⚡ '+e.name+' ⚡',0,nameY);
+    ctx.shadowBlur=0;
+  } else {
+    ctx.fillText(e.name,0,nameY);
+  }
+  ctx.textAlign='left';
+  
   ctx.globalAlpha=1;
   ctx.restore();
 }
 
 function enemyShoot(e){
+  const bsm=diffCfg.bulletSpeedMult;
   if(e.type==='boss'){
     // 攻击预警：发射前闪烁
     e.telegraphTimer=0.3;
     const p=e.pattern%3;
     if(p===0){
-      for(let i=-3;i<=3;i++) enemyBullets.push({x:e.x,y:e.y+20,vx:Math.sin(i*.3)*200,vy:250,life:4,alive:true});
+      for(let i=-3;i<=3;i++) enemyBullets.push({x:e.x,y:e.y+20,vx:Math.sin(i*.3)*200*bsm,vy:250*bsm,life:4,alive:true});
     } else if(p===1){
       for(let i=0;i<12;i++){
         const a=i*Math.PI*2/12+frameCount*.05;
-        enemyBullets.push({x:e.x,y:e.y,vx:Math.cos(a)*180,vy:Math.sin(a)*100+150,life:4,alive:true});
+        enemyBullets.push({x:e.x,y:e.y,vx:Math.cos(a)*180*bsm,vy:Math.sin(a)*100*bsm+150*bsm,life:4,alive:true});
       }
     } else {
       const dx=player.x-e.x,dy=player.y-e.y,dist=Math.sqrt(dx*dx+dy*dy)||1;
-      enemyBullets.push({x:e.x,y:e.y+10,vx:dx/dist*300,vy:dy/dist*300,life:5,alive:true});
+      enemyBullets.push({x:e.x,y:e.y+10,vx:dx/dist*300*bsm,vy:dy/dist*300*bsm,life:5,alive:true});
     }
     e.pattern++;
   } else if(e.type==='large'){
-    enemyBullets.push({x:e.x,y:e.y+15,vx:-40,vy:220,life:4,alive:true});
-    enemyBullets.push({x:e.x,y:e.y+15,vx:40,vy:220,life:4,alive:true});
+    enemyBullets.push({x:e.x,y:e.y+15,vx:-40*bsm,vy:220*bsm,life:4,alive:true});
+    enemyBullets.push({x:e.x,y:e.y+15,vx:40*bsm,vy:220*bsm,life:4,alive:true});
+    if(currentDifficulty==='hard'||currentDifficulty==='hell'){
+      enemyBullets.push({x:e.x,y:e.y+15,vx:0,vy:240*bsm,life:3.5,alive:true});
+    }
   } else if(e.type==='medium'){
-    enemyBullets.push({x:e.x,y:e.y+10,vx:0,vy:200,life:3.5,alive:true});
+    enemyBullets.push({x:e.x,y:e.y+10,vx:0,vy:200*bsm,life:3.5,alive:true});
   } else {
-    if(Math.random()<.4) enemyBullets.push({x:e.x,y:e.y+8,vx:0,vy:180,life:3,alive:true});
+    if(Math.random()<.4) enemyBullets.push({x:e.x,y:e.y+8,vx:0,vy:180*bsm,life:3,alive:true});
   }
 }
 
@@ -713,6 +997,9 @@ function gameOver(cause){
   SFX.die();stopBGM();
   // 剧终慢镜头粒子继续渲染1.5秒
   deathTimer=1.5;
+  // 结局剧情（根据高度决定是悲壮结局还是英雄结局）
+  const storyKey=heightM>=2000?'gameOverGood':'gameOver';
+  setTimeout(()=>queueStory(STORY_DATA[storyKey]),800);
 
   const earned=Math.floor(score/10);
   totalCoins+=earned;gamesPlayed++;totalKills+=kills;
@@ -759,6 +1046,25 @@ function refreshMenu(){
   document.getElementById('menu-stats').innerHTML=
     `🏆 最高: ${recordHeight}m &nbsp;|&nbsp; 🪙 ${totalCoins} &nbsp;|&nbsp; 🎮 ${gamesPlayed}局`;
   renderSkinSelector();
+  renderDifficultySelector();
+}
+
+// ==================== 难度选择器 ====================
+function renderDifficultySelector(){
+  const el=document.getElementById('difficulty-selector');
+  el.innerHTML='';
+  Object.entries(DIFFICULTIES).forEach(([key,d])=>{
+    const btn=document.createElement('div');
+    btn.className='diff-btn';
+    if(key===currentDifficulty) btn.classList.add('active');
+    btn.textContent=d.name;
+    btn.title=d.desc;
+    btn.style.setProperty('--dc',d.color);
+    btn.style.setProperty('--ds',`rgba(${parseColor(d.color)},.5)`);
+    btn.style.setProperty('--db',`rgba(${parseColor(d.color)},.1)`);
+    btn.onclick=(e)=>{e.stopPropagation();currentDifficulty=key;diffCfg=DIFFICULTIES[key];SAVE.set('difficulty',key);renderDifficultySelector();};
+    el.appendChild(btn);
+  });
 }
 
 // ==================== 皮肤选择器 ====================
@@ -809,7 +1115,9 @@ function update(now){
   if(screenShakeTrauma>0){screenShakeTrauma*=Math.pow(.88,dt*60);if(screenShakeTrauma<.001)screenShakeTrauma=0;}
 
   heightM+=80*dt*gameSpeed;
-  gameSpeed=1+heightM/5000;
+  gameSpeed=diffCfg.speedMult+heightM/5000;
+  // 剧情触发检查（每帧检查，但有触发冷却）
+  if(frameCount%120===0) checkStoryTrigger(heightM);
 
   // LV3武器飞行距离
   if(weaponLevel===3&&weapon3Start===0) weapon3Start=heightM;
@@ -831,6 +1139,7 @@ function update(now){
 
     if(player.invincible>0) player.invincible-=dt;
     if(player.shieldTimer>0) player.shieldTimer-=dt;
+    if(player.damageFlash>0) player.damageFlash-=dt;
     if(player.score2xTimer>0) player.score2xTimer-=dt;
     if(player.magnetTimer>0) player.magnetTimer-=dt;
     if(player.bombAnim>0) player.bombAnim-=dt;
@@ -855,6 +1164,8 @@ function update(now){
   // === 得分飘字 ===
   scorePopups.forEach(s=>{s.y+=s.vy*dt;s.opacity-=.8*dt;if(s.opacity<0)s.opacity=0;});
   scorePopups=scorePopups.filter(s=>s.opacity>0);
+  if(bossKillAnnounce.active){bossKillAnnounce.timer-=dt;if(bossKillAnnounce.timer<=0)bossKillAnnounce.active=false;}
+  if(bossIntroAnnounce.active){bossIntroAnnounce.timer-=dt;if(bossIntroAnnounce.timer<=0)bossIntroAnnounce.active=false;}
 
   // === 成就弹窗 ===
   if(achievementPopupTimer>0){achievementPopupTimer-=dt;if(achievementPopupTimer<=0)showAchievement();}
@@ -925,6 +1236,14 @@ function update(now){
           if(feverGauge>=100&&!feverActive){feverActive=true;feverTimer=3;spawnParticles(player.x,player.y,30,'#ff0',150,.6,3);SFX.fever();}
 
           if(e.type==='boss'){bossKills++;dailyMissions.missions.forEach(m=>{if(m.type==='boss'&&!m.done)m.progress++;});bossFight=null;
+            // Boss击杀全屏特效
+            const bossKillTexts=['⚡ BOSS 陨落！⚡','💀 甲方之王 倒下了','🔥 996 永恒帝 已被推翻','⚡ 需求黑洞 已关闭','💥 年终奖清零者 已清零','⚡ KPI终结者 已终结','🔥 无限需求体 已饱和','⚡ PUA大师 已下线'][Math.floor(Math.random()*8)];
+            bossKillAnnounce={active:true,timer:2,text:bossKillTexts};
+            // Boss击杀剧情
+            setTimeout(()=>queueStory(STORY_DATA.bossKill),2200);
+            spawnParticles(e.x,e.y,50,'#ff0',200,.8,4);spawnParticles(e.x,e.y,35,'#f44',160,.6,3);
+            spawnParticles(e.x,e.y,20,'#fff',120,.5,2);
+            screenShakeTrauma=.8;hitStop=.2;
             items.push(createItem(e.x,e.y,'weapon'));items.push(createItem(e.x-20,e.y,'bomb'));items.push(createItem(e.x+20,e.y,'star'));items.push(createItem(e.x,e.y-20,'shield'));items.push(createItem(e.x-10,e.y-10,'coin'));items.push(createItem(e.x+10,e.y-10,'coin'));
           } else if(e.type==='large'){
             if(Math.random()<.7)items.push(createItem(e.x,e.y,Math.random()<.5?'weapon':'bomb'));
@@ -954,7 +1273,12 @@ function update(now){
           feverGauge=Math.min(100,feverGauge+10);
           enemies.splice(ei,1);
         } else {
-          gameOver('被击落了');return;
+          // 扣血+无敌帧
+          player.hp--;player.invincible=1.5;player.damageFlash=.15;
+          screenShakeTrauma=.5;
+          spawnParticles(player.x,player.y,10,'#f44',80,.3,2);
+          SFX.hit(200);
+          if(player.hp<=0){gameOver('被击落了');return;}
         }
       }
     }
@@ -965,8 +1289,13 @@ function update(now){
     for(let bi=enemyBullets.length-1;bi>=0;bi--){
       const b=enemyBullets[bi];
       if(Math.abs(b.x-player.x)<14&&Math.abs(b.y-player.y)<18){
-        player.flashTimer=.1;
-        gameOver('被击中了');return;
+        // 扣血+无敌帧
+        player.hp--;player.invincible=1.5;player.damageFlash=.15;
+        screenShakeTrauma=.5;
+        spawnParticles(player.x,player.y,6,'#f44',60,.2,2);
+        SFX.hit(250);
+        enemyBullets.splice(bi,1);
+        if(player.hp<=0){gameOver('被击中了');return;}
       }
     }
   }
@@ -979,7 +1308,7 @@ function update(now){
     if(e.telegraphTimer>0) e.telegraphTimer-=dt;
     if(e.shootCooldown<=0&&e.y>10&&e.y<H*.7){
       enemyShoot(e);
-      e.shootCooldown=e.shootTimer*(.8+Math.random()*.4);
+      e.shootCooldown=e.shootTimer*(.8+Math.random()*.4)*diffCfg.shootRateMult;
     }
   });
   enemies=enemies.filter(e=>e.y<H+100);
@@ -987,20 +1316,28 @@ function update(now){
   // === 生成敌机 ===
   waveTimer-=dt;
   if(waveTimer<=0&&!bossFight){
-    const r=Math.random();
-    if(r<.5) enemies.push(createEnemy('small'));
-    else if(r<.8) enemies.push(createEnemy('medium'));
-    else enemies.push(createEnemy('large'));
-    waveTimer=.6+Math.random()*1.2-gameSpeed*.05;
-    waveTimer=Math.max(.2,waveTimer);
+    const probs=diffCfg.enemyProbs;
+    const count=diffCfg.spawnCount+(heightM>2000?1:0)+(heightM>5000?1:0);
+    for(let i=0;i<count;i++){
+      const r=Math.random();
+      const type=r<probs[0]?'small':(r<probs[0]+probs[1]?'medium':'large');
+      enemies.push(createEnemy(type));
+    }
+    waveTimer=diffCfg.spawnMin+Math.random()*(diffCfg.spawnMax-diffCfg.spawnMin);
+    waveTimer=Math.max(.04,waveTimer-gameSpeed*.02);
   }
 
   // === Boss生成 ===
-  if(heightM>=nextBossAt&&!bossFight&&enemies.length===0){
-    const boss=createEnemy('boss');boss.x=W/2;boss.y=-60;
+  if(heightM>=nextBossAt&&!bossFight&&enemies.filter(e=>e.type==='boss').length===0){
+    const boss=createEnemy('boss');boss.hp=diffCfg.bossHP;boss.maxHp=diffCfg.bossHP;
+    boss.x=W/2;boss.y=-60;
     enemies.push(boss);bossFight=boss;
     SFX.bossWarning();
-    nextBossAt+=500+Math.random()*100;waveTimer=2;
+    const introQuotes=['检测到BOSS接近！','警告：需求变更通知已发送！','BOSS登场，请做好准备！','甲方的眼线发现你了！','996巡逻队请求支援！'][Math.floor(Math.random()*5)];
+    bossIntroAnnounce={active:true,timer:2.5,text:introQuotes,bossName:boss.name};
+    // Boss战前剧情
+    setTimeout(()=>queueStory(STORY_DATA.bossPre),500);
+    const bInt=diffCfg.bossInterval;nextBossAt+=bInt+Math.random()*(bInt*.25);waveTimer=2;
   }
 
   // combo衰减
@@ -1027,13 +1364,22 @@ function update(now){
 function applyItem(it){
   itemsCollected++;dailyMissions.missions.forEach(m=>{if(m.type==='coin'&&it.type==='coin'&&!m.done)m.progress++;if(m.type==='weapon'&&it.type==='weapon'&&!m.done)m.progress++;});
   spawnParticles(it.x,it.y,12,ITEM_COLORS[it.type],60,.4,2);
+  const itemNames={
+    weapon:['火力超频！','武器升级！','伤害提升！'][Math.floor(Math.random()*3)],
+    bomb:['核弹装填！','清屏神器+1！','炸弹补给！'][Math.floor(Math.random()*3)],
+    star:['星尘加持！','双倍得分！','幸运之星！'][Math.floor(Math.random()*3)],
+    shield:['护盾充能！','无敌启动！','能量护盾！'][Math.floor(Math.random()*3)],
+    coin:'',
+    health:['维修机器人！','生命恢复！','HP+2！'][Math.floor(Math.random()*3)]
+  };
+  if(itemNames[it.type]) addScorePopup(it.x,it.y-5,itemNames[it.type],ITEM_COLORS[it.type],12);
   switch(it.type){
-    case 'weapon':if(weaponLevel<3){weaponLevel++;}else score+=200;break;
+    case 'weapon':if(weaponLevel<3){weaponLevel++;addScorePopup(it.x,it.y-20,'LV'+(weaponLevel),'#0ff',18);}else score+=200;break;
     case 'bomb':bombCount=Math.min(9,bombCount+1);break;
     case 'star':player.score2xTimer=5;break;
-    case 'shield':player.shieldTimer=5;player.invincible=5;break;
+    case 'shield':player.shieldTimer=5;player.invincible=5;player.hp=Math.min(player.maxHp,player.hp+1);break;
     case 'coin':{const bns=currentSkin===3?75:50;totalCoins+=bns;score+=bns;addScorePopup(it.x,it.y,'+'+bns,'#FD0',13);}break;
-    case 'health':player.invincible=3;break;
+    case 'health':player.hp=Math.min(player.maxHp,player.hp+2);addScorePopup(it.x,it.y,'+2HP','#0f0',14);break;
   }
 }
 
@@ -1091,6 +1437,55 @@ function draw(offset){
     ctx.textAlign='left';
   });
 
+  // Boss出场台词
+  if(bossIntroAnnounce.active){
+    const t=bossIntroAnnounce.timer;
+    const alpha=Math.min(1,t/.3);
+    ctx.save();
+    ctx.globalAlpha=alpha;
+    // 警告红底
+    ctx.fillStyle='rgba(255,0,0,0.15)';ctx.fillRect(0,0,W,60);
+    ctx.strokeStyle='rgba(255,60,0,0.5)';ctx.lineWidth=2;
+    ctx.beginPath();ctx.moveTo(0,60);ctx.lineTo(W,60);ctx.stroke();
+    // 主标题
+    ctx.fillStyle='#fff';ctx.font='bold 22px sans-serif';ctx.textAlign='center';
+    ctx.shadowColor='#f00';ctx.shadowBlur=18;
+    ctx.fillText(bossIntroAnnounce.text,W/2,28);
+    ctx.shadowBlur=0;
+    // Boss名字
+    ctx.fillStyle='#ff0';ctx.font='bold 16px sans-serif';
+    ctx.fillText(`—— ${bossIntroAnnounce.bossName} ——`,W/2,50);
+    ctx.restore();
+  }
+
+  // Boss击杀全屏大字
+  if(bossKillAnnounce.active){
+    const t=bossKillAnnounce.timer;
+    const alpha=Math.min(1,t/.3);
+    const scale=1+(2-t)*.4; // 缩放动画
+    ctx.save();
+    ctx.globalAlpha=alpha;
+    ctx.translate(W/2,H*.35);
+    ctx.scale(scale,scale);
+    // 光晕
+    const glow=ctx.createRadialGradient(0,0,20,0,0,200);
+    glow.addColorStop(0,'rgba(255,255,100,0.6)');glow.addColorStop(.5,'rgba(255,100,0,0.2)');glow.addColorStop(1,'rgba(0,0,0,0)');
+    ctx.fillStyle=glow;ctx.fillRect(-250,-80,500,160);
+    // 主文字
+    ctx.fillStyle='#fff';ctx.font='bold 48px sans-serif';
+    ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.shadowColor='#f80';ctx.shadowBlur=30;
+    ctx.fillText(bossKillAnnounce.text,0,0);
+    ctx.shadowColor='#f00';ctx.shadowBlur=15;
+    ctx.fillText(bossKillAnnounce.text,0,0);
+    ctx.shadowBlur=0;
+    // 副标题
+    ctx.fillStyle='rgba(255,255,255,0.8)';ctx.font='bold 16px sans-serif';
+    ctx.fillText('+2000 POINTS',0,36);
+    ctx.restore();
+    ctx.textAlign='left';
+  }
+
   // 炸弹动画
   if(player.bombAnim>0){ctx.fillStyle=`rgba(255,255,255,${player.bombAnim*.6})`;ctx.fillRect(0,0,W,H);}
 
@@ -1147,6 +1542,29 @@ function draw(offset){
     ctx.textAlign='left';
   }
 
+  // 玩家HP心形 (顶部居中)
+  const heartSize=14,heartGap=4,heartY=26;
+  const totalHw=player.maxHp*heartSize+(player.maxHp-1)*heartGap;
+  const heartStartX=(W-totalHw)/2;
+  for(let i=0;i<player.maxHp;i++){
+    const hx=heartStartX+i*(heartSize+heartGap);
+    const alive=i<player.hp;
+    const lowHP=player.hp<=1&&alive;
+    // 闪烁/跳动
+    const pulse=alive&&lowHP?1+Math.sin(frameCount*.5)*.15:1;
+    ctx.save();
+    ctx.translate(hx+heartSize/2,heartY+heartSize/2);
+    ctx.scale(pulse,pulse);
+    drawHeart(-heartSize/2,-heartSize/2,heartSize,alive?'#f44':'rgba(100,30,30,.5)');
+    if(alive){
+      ctx.shadowColor='#f44';ctx.shadowBlur=lowHP?8:3;
+      ctx.fillStyle=lowHP?'#f00':'#f44';
+      drawHeartPath(-heartSize/2+1,-heartSize/2+1,heartSize-2);
+      ctx.fill();ctx.shadowBlur=0;
+    }
+    ctx.restore();
+  }
+
   // 进度条 (底部)
   const pbY=H-8,pbW=W*.5,pbX=(W-pbW)/2;
   const progressToBoss=heightM%500/500;
@@ -1192,7 +1610,7 @@ function draw(offset){
 
   // 皮肤名称
   ctx.fillStyle='rgba(255,255,255,0.25)';ctx.font='9px sans-serif';ctx.textAlign='center';
-  ctx.fillText(SKINS[currentSkin].name,W/2,H-15);
+  ctx.fillText(SKINS[currentSkin].name+' | '+diffCfg.name+'难度',W/2,H-15);
   ctx.textAlign='left';
 }
 
@@ -1267,15 +1685,18 @@ window.addEventListener('keyup',e=>{if(e.key===' ')shooting=false;});
 // ==================== 游戏控制 ====================
 function startGame(){
   initAudio();startBGM();
+  diffCfg = DIFFICULTIES[currentDifficulty];
   player=createPlayer();
+  player.hp=diffCfg.hp;player.maxHp=diffCfg.hp;
   enemies=[];playerBullets=[];enemyBullets=[];items=[];particles=[];
   scorePopups=[];
+  bossKillAnnounce={active:false,timer:0,text:''};
   score=0;heightM=0;combo=0;maxCombo=0;kills=0;
   screenShakeTrauma=0;hitStop=0;
   feverGauge=0;feverActive=false;feverTimer=0;
-  bombCount=3;weaponLevel=1;
-  bossFight=null;waveTimer=1;nextBossAt=500;
-  gameSpeed=1;frameCount=0;gameTime=0;
+  bombCount=diffCfg.startBombs;weaponLevel=1;
+  bossFight=null;waveTimer=.3;nextBossAt=diffCfg.bossInterval;
+  gameSpeed=diffCfg.speedMult;frameCount=0;gameTime=0;
   itemsCollected=0;deathSlowMo=0;deathTimer=0;
   weapon3Start=0;weapon3Distance=0;
   weather={type:'clear',timer:15};dailyMissions=getDailyMissions();
@@ -1287,6 +1708,10 @@ function startGame(){
   document.getElementById('achievement-popup').classList.remove('show');
   gameRunning=true;
   lastTime=performance.now();
+  storyTriggered.clear(); // 重置剧情触发记录
+
+  // 开场剧情
+  setTimeout(()=>queueStory(STORY_DATA.start),500);
 
   // 教程
   if(!hasPlayedTutorial){

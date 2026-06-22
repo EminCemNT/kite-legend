@@ -1115,7 +1115,8 @@ function update(now){
   if(screenShakeTrauma>0){screenShakeTrauma*=Math.pow(.88,dt*60);if(screenShakeTrauma<.001)screenShakeTrauma=0;}
 
   heightM+=80*dt*gameSpeed;
-  gameSpeed=diffCfg.speedMult+heightM/5000;
+  // gameSpeed 上限 8x，避免极高高度下每帧跨越数百米导致逻辑混乱
+  gameSpeed=Math.min(8, diffCfg.speedMult+heightM/5000);
   // 剧情触发检查（每帧检查，但有触发冷却）
   if(frameCount%120===0) checkStoryTrigger(heightM);
 
@@ -1324,7 +1325,8 @@ function update(now){
       enemies.push(createEnemy(type));
     }
     waveTimer=diffCfg.spawnMin+Math.random()*(diffCfg.spawnMax-diffCfg.spawnMin);
-    waveTimer=Math.max(.04,waveTimer-gameSpeed*.02);
+    // 随 gameSpeed 缩短 spawn 间隔，但最低 0.04s
+    waveTimer=Math.max(.04,waveTimer/(1+gameSpeed*.1));
   }
 
   // === Boss生成 ===
@@ -1337,7 +1339,9 @@ function update(now){
     bossIntroAnnounce={active:true,timer:2.5,text:introQuotes,bossName:boss.name};
     // Boss战前剧情
     setTimeout(()=>queueStory(STORY_DATA.bossPre),500);
-    const bInt=diffCfg.bossInterval;nextBossAt+=bInt+Math.random()*(bInt*.25);waveTimer=2;
+    // Boss 间隔随 gameSpeed 适配，避免高速下每帧都触发 Boss
+    const bInt=diffCfg.bossInterval * Math.max(1, gameSpeed * .5);
+    nextBossAt+=bInt+Math.random()*(bInt*.25);waveTimer=2;
   }
 
   // combo衰减

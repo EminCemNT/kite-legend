@@ -263,8 +263,8 @@ canvas{display:block;width:100%;height:100%;}
 // 星际风筝传说 v5.1 — Tier 1-3 全面升级
 // 基于 Raiden 雷电 × 独立游戏果汁设计
 // ============================================================
-const GAME_VERSION = 'v5.1';
-const BUILD_DATE = '2026-06-22';
+const GAME_VERSION = 'v5.2';
+const BUILD_DATE = '2026-06-24';
 const canvas = document.getElementById('c');
 const ctx = canvas.getContext('2d');
 canvas.style.imageRendering = 'auto';
@@ -566,18 +566,25 @@ function isSkinUnlocked(i){
   return false;
 }
 
-// 成就系统
+// 成就系统（15个）
 const ACHIEVEMENTS = [
+  // 进度类
   {id:'first_flight',name:'首次飞行',desc:'完成第一局游戏',icon:'✈️',check:(s)=>s.games>=1},
   {id:'ace_pilot',name:'王牌飞行员',desc:'累计击杀100个敌人',icon:'🎯',check:(s)=>s.kills>=100},
   {id:'sky_high',name:'冲破云霄',desc:'飞到500m高度',icon:'🌤️',check:(s)=>s.height>=500},
   {id:'stratosphere',name:'平流层',desc:'飞到1500m高度',icon:'🌍',check:(s)=>s.height>=1500},
   {id:'star_walker',name:'星际漫步',desc:'飞到3000m高度',icon:'🚀',check:(s)=>s.height>=3000},
+  {id:'void_explorer',name:'虚空探索者',desc:'飞到6000m高度',icon:'🌌',check:(s)=>s.height>=6000},
+  // 战斗类
   {id:'boss_slayer',name:'机甲猎人',desc:'击败5个Boss',icon:'⚔️',check:(s)=>s.bossKills>=5},
   {id:'combo_king',name:'连击之王',desc:'打出20连击',icon:'🔥',check:(s)=>s.maxCombo>=20},
   {id:'combo_god',name:'连击之神',desc:'打出50连击',icon:'💫',check:(s)=>s.maxCombo>=50},
+  {id:'fever_lord',name:'Fever之王',desc:'一局激活3次Fever',icon:'🌡️',check:(s)=>s.feverCount>=3},
+  // 收集类
   {id:'rich_kite',name:'风筝富翁',desc:'累计获得500金币',icon:'💰',check:(s)=>s.coins>=500},
-  {id:'weapon_master',name:'武器大师',desc:'满级武器飞500m',icon:'⚡',check:(s)=>s.weapon3Distance>=500},
+  {id:'weapon_master',name:'武器大师',desc:'使用进化武器飞500m',icon:'⚡',check:(s)=>s.weapon3Distance>=500},
+  {id:'drone_commander',name:'无人机司令',desc:'同时拥有3架无人机',icon:'🤖',check:(s)=>s.maxDrones>=3},
+  // 生存类
   {id:'survivor',name:'飞行幸存者',desc:'一局存活3分钟',icon:'⏱️',check:(s)=>s.survivalTime>=180},
   {id:'collector',name:'收藏家',desc:'一局收集30个道具',icon:'🎁',check:(s)=>s.itemsCollected>=30},
 ];
@@ -657,6 +664,93 @@ const STORY_DATA={
     {speaker:'Boss',text:'又一个不知死活的风筝飞行员……',delay:2.5},
     {speaker:'Boss',text:'这片星空，将由我来回收！',delay:5}
   ],
+  // 各区域专属Boss出场台词（按zone.theme索引）
+  bossPreByTheme:{
+    corporate:[
+      {delay:0, lines:[
+        {speaker:'任务指挥中心',text:'注意！职场暴君接近！拒绝无限改稿！'},
+        {speaker:'需求黑洞',text:'你的需求文档在哪里！？',delay:2.5},
+        {speaker:'需求黑洞',text:'方案推翻重做——所有人！加班！',delay:5}
+      ]},
+      {delay:0, lines:[
+        {speaker:'KPI执刑人',text:'飞行员绩效：D级，立刻淘汰！',delay:0},
+        {speaker:'风筝飞行员',text:'老子是外包，不打绩效！',delay:2.5},
+        {speaker:'KPI执刑人',text:'外包也不行！出发，年终奖清零！',delay:5}
+      ]},
+      {delay:0, lines:[
+        {speaker:'无限改稿者',text:'这个字体不对！背景色不对！全部重来！',delay:0},
+        {speaker:'风筝飞行员',text:'……这他妈是飞行游戏啊！',delay:2.5},
+        {speaker:'无限改稿者',text:'飞机也要改！再小一点！再大一点！',delay:5}
+      ]}
+    ],
+    military:[
+      {delay:0, lines:[
+        {speaker:'任务指挥中心',text:'军团统帅出现！密集弹幕即将覆盖！',delay:0},
+        {speaker:'军团统帅',text:'听令！拦截目标，火力全开！',delay:2.5},
+        {speaker:'军团统帅',text:'你一个风筝……能飞多远？',delay:5}
+      ]},
+      {delay:0, lines:[
+        {speaker:'碎星者',text:'收到你的坐标了，飞行员。',delay:0},
+        {speaker:'风筝飞行员',text:'你怎么……！',delay:2.5},
+        {speaker:'碎星者',text:'轨道炮，充能完毕。',delay:5}
+      ]}
+    ],
+    alien:[
+      {delay:0, lines:[
+        {speaker:'异星霸主',text:'ΩΩΩ……碳基生命探测到……',delay:0},
+        {speaker:'异星霸主',text:'样本价值：零。消除处理。',delay:2.5},
+        {speaker:'风筝飞行员',text:'我样本价值零？！你才零！',delay:5}
+      ]},
+      {delay:0, lines:[
+        {speaker:'维度漫步者',text:'这个维度……不欢迎你。',delay:0},
+        {speaker:'维度漫步者',text:'空间撕裂，开始。',delay:2.5},
+        {speaker:'任务指挥中心',text:'！！！空间异常！全速脱离！',delay:5}
+      ]}
+    ],
+    cosmic:[
+      {delay:0, lines:[
+        {speaker:'任务指挥中心',text:'深空警报！星海主宰降临！',delay:0},
+        {speaker:'星海主宰',text:'渺小的星尘……你们也称之为"生命"？',delay:2.5},
+        {speaker:'星海主宰',text:'银河系，今天终结。',delay:5}
+      ]},
+      {delay:0, lines:[
+        {speaker:'黑洞之王',text:'引力场，激活。',delay:0},
+        {speaker:'风筝飞行员',text:'什么？！飞不动了！',delay:2.5},
+        {speaker:'黑洞之王',text:'有趣……拉进来，慢慢压缩。',delay:5}
+      ]}
+    ],
+    void:[
+      {delay:0, lines:[
+        {speaker:'虚空之神',text:'…………',delay:0},
+        {speaker:'任务指挥中心',text:'没有信号……什么都没有……',delay:2.5},
+        {speaker:'虚空之神',text:'你不应该来到这里。现在，消失。',delay:5}
+      ]},
+      {delay:0, lines:[
+        {speaker:'终结者·零',text:'我是第一个到达这里的意识。',delay:0},
+        {speaker:'终结者·零',text:'你是最后一个。',delay:2.5},
+        {speaker:'风筝飞行员',text:'……那就让你见识见识，倒数第一有多强！',delay:5}
+      ]}
+    ]
+  },
+  // 各区域Boss击败台词
+  bossKillByTheme:{
+    corporate:[
+      [{speaker:'任务指挥中心',text:'需求黑洞摧毁！本季度需求已冻结！',delay:0},{speaker:'风筝飞行员',text:'下班！老子要下班！',delay:2.5}],
+      [{speaker:'风筝飞行员',text:'KPI执刑官……你的KPI是多少？',delay:0},{speaker:'任务指挥中心',text:'零。他已被你清零了。',delay:2.5}]
+    ],
+    military:[
+      [{speaker:'任务指挥中心',text:'军团统帅陨落！星际防线已突破！',delay:0},{speaker:'风筝飞行员',text:'没想到风筝能干掉军舰……',delay:2.5}],
+    ],
+    alien:[
+      [{speaker:'任务指挥中心',text:'外星Boss已消灭！收集异星碎片！',delay:0},{speaker:'风筝飞行员',text:'它们……没有血，流的是光子？',delay:2.5}],
+    ],
+    cosmic:[
+      [{speaker:'任务指挥中心',text:'星海主宰击毁！宇宙平静了片刻……',delay:0},{speaker:'风筝飞行员',text:'……银河系还在吗？',delay:2.5},{speaker:'任务指挥中心',text:'在。你救了银河系。',delay:5}],
+    ],
+    void:[
+      [{speaker:'虚空之神',text:'……不……可能……',delay:0},{speaker:'风筝飞行员',text:'可能的。风筝什么都能做到。',delay:2.5}],
+    ]
+  },
   bossKill:[
     {speaker:'任务指挥中心',text:'Boss已被击毁！干得漂亮！',delay:0},
     {speaker:'风筝飞行员',text:'终于……它掉的东西能卖钱吗？',delay:2.5},
@@ -778,7 +872,49 @@ const SFX={
   die(){playNoise(.4,.1,300);playTone(60,.3,'sine',.15);playTone(40,.5,'sawtooth',.08);},
   achievement(){playTone(523,.1,'square',.06);setTimeout(()=>playTone(659,.1,'square',.06),100);setTimeout(()=>playTone(784,.15,'square',.07),200);},
   fever(){playTone(440,.08,'square',.05);setTimeout(()=>playTone(554,.08,'square',.05),60);setTimeout(()=>playTone(659,.08,'square',.05),120);setTimeout(()=>playTone(880,.12,'square',.06),180);},
-  combo(c){playTone(400+c*30,.08,'square',Math.min(.1,c*.01));},
+  combo(c){
+    // 递进式连击音效：每5连击升一个音阶，有递进感
+    const base = 300 + Math.min(c, 60) * 15;
+    const vol = Math.min(0.12, 0.04 + c * 0.003);
+    if(c>=50){
+      // 50+: 三和弦爆发
+      playTone(base,.12,'square',vol);
+      setTimeout(()=>playTone(base*1.25,.1,'square',vol*.8),40);
+      setTimeout(()=>playTone(base*1.5,.14,'square',vol),80);
+      setTimeout(()=>playTone(base*2,.1,'sine',vol*.6),140);
+    } else if(c>=25){
+      // 25+: 双音上升
+      playTone(base,.1,'square',vol);
+      setTimeout(()=>playTone(base*1.33,.12,'square',vol),50);
+    } else if(c>=10){
+      // 10+: 上升扫频
+      const o=audioCtx?audioCtx.createOscillator():null;
+      if(o&&audioCtx&&!sfxMuted){
+        const t=audioCtx.currentTime;
+        const g=audioCtx.createGain();
+        o.type='square';o.frequency.setValueAtTime(base*.8,t);
+        o.frequency.linearRampToValueAtTime(base*1.2,t+.1);
+        g.gain.setValueAtTime(vol,t);g.gain.exponentialRampToValueAtTime(.001,t+.12);
+        o.connect(g);g.connect(audioCtx.destination);o.start(t);o.stop(t+.15);
+      }
+    } else if(c>=5){
+      // 5+: 简单双音
+      playTone(base,.08,'square',vol*.9);
+      setTimeout(()=>playTone(base*1.2,.06,'square',vol*.7),60);
+    } else {
+      // 1-4: 清脆单音
+      playTone(base,.06,'square',vol*.7);
+    }
+    // 里程碑连击额外特效音
+    if(c===10) setTimeout(()=>SFX.milestone(10),150);
+    else if(c===25) setTimeout(()=>SFX.milestone(25),150);
+    else if(c===50) setTimeout(()=>SFX.milestone(50),200);
+  },
+  milestone(c){
+    // 连击里程碑提示音：C大调上行琶音
+    const notes=c>=50?[523,659,784,1047]:(c>=25?[440,554,659,880]:[349,440,523,698]);
+    notes.forEach((f,i)=>setTimeout(()=>playTone(f,.15,'square',.08),i*70));
+  },
 };
 
 // BGM - 简单循环低音 + 琶音（动态速度）
@@ -823,7 +959,7 @@ function toggleSfx(){
 let player,enemies,playerBullets,enemyBullets,items,particles;
 let score=0, heightM=0, combo=0, maxCombo=0, kills=0;
 let screenShakeTrauma=0, hitStop=0;
-let feverGauge=0, feverActive=false, feverTimer=0;
+let feverGauge=0, feverActive=false, feverTimer=0, feverCount=0;
 let bombCount=3, weaponLevel=1;
 let bossFight=null, waveTimer=0, nextBossAt=500;
 let gameSpeed=1, gameTime=0;
@@ -836,6 +972,7 @@ let lastZone='corporate';
 let grazeCount=0, starStormGauge=0, starStormActive=false, starStormTimer=0;
 let isFocus=false, focusSlowMo=0;
 let drones=[]; // 风筝伴侣无人机
+let maxDronesThisGame=0; // 本局最多同时拥有无人机数
 let passiveItems=[]; // 被动道具列表
 let weaponEvolved=false; // 武器是否已进化
 
@@ -1370,6 +1507,7 @@ function addDrone(){
     orbitAngle:idx*Math.PI*2/3, orbitRadius:35+idx*12,
     shootTimer:0, absorbCooldown:0, healTimer:0
   });
+  if(drones.length>maxDronesThisGame) maxDronesThisGame=drones.length;
   addScorePopup(player.x,player.y-30,'🛸 '+type.name+'无人机','#4af',16);
   SFX.powerup&&SFX.powerup();
 }
@@ -1576,8 +1714,9 @@ function gameOver(cause){
 
   // 检查成就
   const stats={
-    games:gamesPlayed,kills:totalKills,height:heightM,bossKills:totalKills,
-    maxCombo,coins:totalCoins,weapon3Distance,itemsCollected,survivalTime:gameTime
+    games:gamesPlayed, kills:totalKills, height:heightM, bossKills:bossKills,
+    maxCombo, coins:totalCoins, weapon3Distance, itemsCollected, survivalTime:gameTime,
+    feverCount, maxDrones:maxDronesThisGame
   };
   ACHIEVEMENTS.forEach(a=>{
     if(!achievements.includes(a.id)&&a.check(stats)) unlockAchievement(a.id);
@@ -1625,7 +1764,72 @@ function gameOver(cause){
     
     document.getElementById('gameover').style.display='flex';
     refreshMenu();
+    // 生成分享截图卡
+    generateShareCard(Math.floor(score), Math.floor(heightM), kills, maxCombo);
   },1000);
+}
+
+// ==================== 分享截图卡 ====================
+function generateShareCard(score, height, kills, combo){
+  try{
+    const sc=document.createElement('canvas');
+    const sw=320, sh=180;
+    sc.width=sw;sc.height=sh;
+    const sx=sc.getContext('2d');
+    // 背景渐变
+    const bg=sx.createLinearGradient(0,0,sw,sh);
+    bg.addColorStop(0,'#05061a');bg.addColorStop(1,'#0a1030');
+    sx.fillStyle=bg;sx.fillRect(0,0,sw,sh);
+    // 星点
+    sx.fillStyle='rgba(255,255,255,0.6)';
+    for(let i=0;i<40;i++){sx.beginPath();sx.arc(Math.random()*sw,Math.random()*sh,.8,0,Math.PI*2);sx.fill();}
+    // 顶部标题
+    sx.fillStyle='#0cf';sx.font='bold 14px monospace';sx.textAlign='center';
+    sx.fillText('⭐ 星际风筝传说 '+GAME_VERSION+' ⭐',sw/2,22);
+    // 分割线
+    sx.strokeStyle='rgba(0,200,255,0.3)';sx.lineWidth=1;
+    sx.beginPath();sx.moveTo(20,30);sx.lineTo(sw-20,30);sx.stroke();
+    // 高度大字
+    sx.fillStyle='#fff';sx.font='bold 36px monospace';sx.textAlign='center';
+    sx.fillText(height+'m',sw/2,72);
+    sx.fillStyle='rgba(255,255,255,0.5)';sx.font='11px monospace';
+    sx.fillText('飞行高度',sw/2,88);
+    // 三列数据
+    const cols=[
+      {label:'得分',val:score,color:'#ff0'},
+      {label:'击杀',val:kills,color:'#f44'},
+      {label:'最大连击',val:'×'+combo,color:'#0f8'},
+    ];
+    cols.forEach((c,i)=>{
+      const cx=50+i*110;
+      sx.fillStyle=c.color;sx.font='bold 16px monospace';sx.textAlign='center';
+      sx.fillText(c.val,cx,120);
+      sx.fillStyle='rgba(255,255,255,0.4)';sx.font='10px monospace';
+      sx.fillText(c.label,cx,134);
+    });
+    // 底部版权
+    sx.fillStyle='rgba(255,255,255,0.2)';sx.font='9px monospace';sx.textAlign='center';
+    sx.fillText('kodecoffee.com/i/kitelegend',sw/2,158);
+    // 绑定到 go-share 区域
+    const shareEl=document.getElementById('go-share');
+    shareEl.innerHTML='';
+    sc.style.cssText='border-radius:8px;max-width:100%;border:1px solid rgba(0,200,255,0.3);cursor:pointer;display:block;margin:0 auto;';
+    sc.title='点击下载截图，分享你的战绩！';
+    sc.onclick=()=>{
+      try{
+        const link=document.createElement('a');
+        link.download='kite-legend-'+Date.now()+'.png';
+        link.href=sc.toDataURL('image/png');
+        link.click();
+      }catch(e){}
+    };
+    shareEl.appendChild(sc);
+    const tip=document.createElement('div');
+    tip.textContent='👆 点击图片保存并分享战绩';
+    tip.style.cssText='font-size:10px;color:rgba(0,200,255,0.6);text-align:center;margin-top:4px;';
+    shareEl.appendChild(tip);
+    shareEl.style.display='block';
+  }catch(e){document.getElementById('go-share').style.display='none';}
 }
 
 function saveDaily(){
@@ -1932,13 +2136,17 @@ function update(now){
             if(combo%5===0) SFX.combo(combo);
             dailyMissions.missions.forEach(m=>{if(m.type==='kills'&&!m.done)m.progress++;});
             feverGauge=Math.min(100,feverGauge+(e.type==='boss'?30:(e.type==='large'?15:5)));
-            if(feverGauge>=100&&!feverActive){feverActive=true;feverTimer=3;spawnParticles(player.x,player.y,30,'#ff0',150,.6,3);SFX.fever();}
+            if(feverGauge>=100&&!feverActive){feverActive=true;feverTimer=3;feverCount++;spawnParticles(player.x,player.y,30,'#ff0',150,.6,3);SFX.fever();}
             if(e.type==='boss'){bossKills++;dailyMissions.missions.forEach(m=>{if(m.type==='boss'&&!m.done)m.progress++;});bossFight=null;
               const bossKillTexts=['⚡ BOSS 陨落！⚡','💀 甲方之王 倒下了','🔥 996 永恒帝 已被推翻','⚡ 需求黑洞 已关闭','💥 年终奖清零者 已清零','⚡ KPI终结者 已终结','🔥 无限需求体 已饱和','⚡ PUA大师 已下线'][Math.floor(Math.random()*8)];
               bossKillAnnounce={active:true,timer:2.5,text:bossKillTexts};spawnParticles(e.x,e.y,50,'#f00',200,.8,4);
               if(player.hp<player.maxHp){player.hp=Math.min(player.maxHp,player.hp+2);addScorePopup(e.x,e.y-30,'HP+2','#0f0',14);}
               dailyMissions.missions.forEach(m=>{if(m.type==='boss'&&!m.done)m.progress++;});
-              queueStory(STORY_DATA.bossKill);
+              // 按区域选专属击败台词
+              const killZone=getZone(heightM);
+              const killPool=STORY_DATA.bossKillByTheme[killZone.theme];
+              const killStory=killPool&&killPool.length>0?killPool[Math.floor(Math.random()*killPool.length)]:STORY_DATA.bossKill;
+              queueStory(killStory);
             }
             enemies.splice(ei,1);
           }
@@ -1969,14 +2177,19 @@ function update(now){
           dailyMissions.missions.forEach(m=>{if(m.type==='kills'&&!m.done)m.progress++;});
 
           feverGauge=Math.min(100,feverGauge+(e.type==='boss'?30:(e.type==='large'?15:5)));
-          if(feverGauge>=100&&!feverActive){feverActive=true;feverTimer=3;spawnParticles(player.x,player.y,30,'#ff0',150,.6,3);SFX.fever();}
+          if(feverGauge>=100&&!feverActive){feverActive=true;feverTimer=3;feverCount++;spawnParticles(player.x,player.y,30,'#ff0',150,.6,3);SFX.fever();}
 
           if(e.type==='boss'){bossKills++;dailyMissions.missions.forEach(m=>{if(m.type==='boss'&&!m.done)m.progress++;});bossFight=null;
             // Boss击杀全屏特效
             const bossKillTexts=['⚡ BOSS 陨落！⚡','💀 甲方之王 倒下了','🔥 996 永恒帝 已被推翻','⚡ 需求黑洞 已关闭','💥 年终奖清零者 已清零','⚡ KPI终结者 已终结','🔥 无限需求体 已饱和','⚡ PUA大师 已下线'][Math.floor(Math.random()*8)];
             bossKillAnnounce={active:true,timer:2,text:bossKillTexts};
-            // Boss击杀剧情
-            setTimeout(()=>queueStory(STORY_DATA.bossKill),2200);
+            // Boss击杀剧情 — 按区域选专属台词
+            setTimeout(()=>{
+              const killZone2=getZone(heightM);
+              const killPool2=STORY_DATA.bossKillByTheme[killZone2.theme];
+              const killStory2=killPool2&&killPool2.length>0?killPool2[Math.floor(Math.random()*killPool2.length)]:STORY_DATA.bossKill;
+              queueStory(killStory2);
+            },2200);
             spawnParticles(e.x,e.y,50,'#ff0',200,.8,4);spawnParticles(e.x,e.y,35,'#f44',160,.6,3);
             spawnParticles(e.x,e.y,20,'#fff',120,.5,2);
             screenShakeTrauma=.8;hitStop=.2;
@@ -2103,10 +2316,17 @@ function update(now){
       `${zoneName}守卫者 — ${boss.name} 登场！`,
     ][Math.floor(Math.random()*3)];
     bossIntroAnnounce={active:true,timer:2.5,text:introQuotes,bossName:boss.name};
-    // Boss战前剧情
+    // Boss战前剧情 — 按区域选择专属台词
     setTimeout(()=>{
-      const msg=[{speaker:'任务指挥中心',text:`${zoneName}区域 — Boss单位${boss.name}出现！`,delay:0}];
-      queueStory(msg);
+      const theme=zone.theme;
+      const prePool=STORY_DATA.bossPreByTheme[theme];
+      if(prePool&&prePool.length>0){
+        const picked=prePool[Math.floor(Math.random()*prePool.length)];
+        queueStory(picked.lines||picked);
+      } else {
+        const msg=[{speaker:'任务指挥中心',text:`${zoneName}区域 — Boss单位${boss.name}出现！`,delay:0}];
+        queueStory(msg);
+      }
     },500);
     // Boss 间隔随 gameSpeed 适配
     const bInt=diffCfg.bossInterval * Math.max(1, gameSpeed * .5);
@@ -2534,12 +2754,13 @@ function startGame(){
   bossKillAnnounce={active:false,timer:0,text:''};
   score=0;heightM=0;combo=0;maxCombo=0;kills=0;
   screenShakeTrauma=0;hitStop=0;
-  feverGauge=0;feverActive=false;feverTimer=0;
+  feverGauge=0;feverActive=false;feverTimer=0;feverCount=0;
   bombCount=diffCfg.startBombs;weaponLevel=1;weaponType='spread';weaponEvolved=false;
   bossFight=null;waveTimer=.3;nextBossAt=diffCfg.bossInterval;
   gameSpeed=diffCfg.speedMult;frameCount=0;gameTime=0;
   itemsCollected=0;deathSlowMo=0;deathTimer=0;
   weapon3Start=0;weapon3Distance=0;
+  maxDronesThisGame=0;
   weather={type:'clear',timer:15};dailyMissions=getDailyMissions();
   lastZone='corporate';
 
@@ -2620,12 +2841,14 @@ window.addEventListener('resize',()=>{resize();initBg();});
 // 版本号显示
 document.getElementById('menu-version').textContent = GAME_VERSION + ' · ' + BUILD_DATE;
 
-console.log('🌌 星际风筝传说 ' + GAME_VERSION + ' — 多武器觉醒');
+console.log('🌌 星际风筝传说 ' + GAME_VERSION + ' — 进化升级');
+console.log('  v5.2新增: 连击音效升级 · Boss专属台词 · 15个成就 · 死亡分享截图卡');
 console.log('  Tier1: Trauma²震屏 · 挤压拉伸 · 受击闪白 · 得分飘字 · Boss血条');
-console.log('  Tier2: 成就系统 · 每日任务 · 连击升级 · 进度条 · 皮肤解锁');
-console.log('  Tier3: 关卡分区 · 5区域5主题 · 多样化Boss弹幕 · 动态难度递进');
+console.log('  Tier2: 成就系统(x15) · 每日任务 · 连击升级音效 · 进度条 · 皮肤解锁');
+console.log('  Tier3: 关卡分区 · 5区域5主题 · Boss专属剧情台词 · 动态难度递进');
 console.log('  Tier4: 排行榜系统 · 区域切换提示 · 分裂弹 · 强制弹幕升级');
 console.log('  Tier5: 散射炮🔷 · 激光炮💠 · 折射弹💚 · 追踪弹💛 四大武器系统');
+console.log('  Tier6: 死亡分享截图卡 · 无人机司令成就 · Fever之王成就');
 console.log('  ☕ 支持作者: https://kodecoffee.com/i/kitelegend');
 // 预加载第一帧
 requestAnimationFrame(gameLoop);
